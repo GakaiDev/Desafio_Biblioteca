@@ -51,3 +51,8 @@ end
 
 gem "devise", "~> 5.0"
 gem "devise-jwt", "~> 0.13.0"
+
+gem "sidekiq", "~> 8.1"
+gem "redis", "~> 6.0"
+
+gem "dotenv-rails", "~> 3.2"
