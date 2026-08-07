@@ -1,6 +1,7 @@
 Rails.application.routes.draw do
   resources :categorias
   resources :livros
+  resources :usuarios_biblioteca, path: "usuarios"
 
   devise_for :bibliotecarios, path: "", path_names: {
     sign_in: "login",

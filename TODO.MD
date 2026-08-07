@@ -23,11 +23,11 @@
 - [x] Desenvolver endpoints da API (CRUD).
 
 ## 4. Livros (Pendente)
-- [ ] Criar modelo e migração para `Livro`.
-- [ ] Atributos obrigatórios: Autor, Título, Categoria, Status (disponível/emprestado).
-- [ ] Atributos opcionais: Observações.
-- [ ] Configurar chaves estrangeiras (relacionamento com Categoria).
-- [ ] Desenvolver endpoints da API (CRUD).
+- [x] Criar modelo e migração para `Livro`.
+- [x] Atributos obrigatórios: Autor, Título, Categoria, Status (disponível/emprestado).
+- [x] Atributos opcionais: Observações.
+- [x] Configurar chaves estrangeiras (relacionamento com Categoria).
+- [x] Desenvolver endpoints da API (CRUD).
 
 ## 5. Usuários da Biblioteca (Pendente)
 - [ ] Criar modelo e migração para `UsuarioBiblioteca`.

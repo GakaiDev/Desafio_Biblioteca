@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_07_002203) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_07_135740) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -44,6 +44,22 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_07_002203) do
     t.string "titulo", null: false
     t.datetime "updated_at", null: false
     t.index ["categoria_id"], name: "index_livros_on_categoria_id"
+  end
+
+  create_table "usuario_bibliotecas", force: :cascade do |t|
+    t.string "bairro"
+    t.string "cep"
+    t.string "cidade"
+    t.string "cpf", null: false
+    t.datetime "created_at", null: false
+    t.string "email", null: false
+    t.string "logradouro"
+    t.string "nome", null: false
+    t.string "senha_emprestimo"
+    t.string "telefone", null: false
+    t.string "uf"
+    t.datetime "updated_at", null: false
+    t.index ["cpf"], name: "index_usuario_bibliotecas_on_cpf", unique: true
   end
 
   add_foreign_key "livros", "categoria", column: "categoria_id"
