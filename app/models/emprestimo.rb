@@ -1,0 +1,20 @@
+class Emprestimo < ApplicationRecord
+  belongs_to :livro
+  belongs_to :usuario_biblioteca
+
+  before_validation :definir_datas, on: :create
+  after_create_commit :atualizar_status_livro
+
+  validates :data_emprestimo, :data_devolucao, presence: true
+
+  private
+
+  def definir_datas
+    self.data_emprestimo ||= Date.current
+    self.data_devolucao ||= 15.business_days.from_now.to_date
+  end
+
+  def atualizar_status_livro
+    livro.update(status: "emprestado")
+  end
+end

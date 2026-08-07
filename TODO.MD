@@ -30,11 +30,11 @@
 - [x] Desenvolver endpoints da API (CRUD).
 
 ## 5. Usuários da Biblioteca (Pendente)
-- [ ] Criar modelo e migração para `UsuarioBiblioteca`.
-- [ ] Atributos obrigatórios: Nome completo, CPF (único), Telefone, E-mail.
-- [ ] Lógica para gerar senha de empréstimo aleatória automaticamente no cadastro.
-- [ ] Lógica via Sidekiq para enviar a senha gerada para o e-mail do usuário.
-- [ ] Desenvolver endpoints da API (CRUD).
+- [x] Criar modelo e migração para `UsuarioBiblioteca`.
+- [x] Atributos obrigatórios: Nome completo, CPF (único), Telefone, E-mail.
+- [x] Lógica para gerar senha de empréstimo aleatória automaticamente no cadastro.
+- [x] Lógica via Sidekiq para enviar a senha gerada para o e-mail do usuário.
+- [x] Desenvolver endpoints da API (CRUD).
 
 ## 6. Empréstimos (Pendente)
 - [ ] Criar modelo e migração para `Emprestimo` relacionando Livro e Usuário.

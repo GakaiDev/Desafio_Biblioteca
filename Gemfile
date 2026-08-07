@@ -56,3 +56,5 @@ gem "sidekiq", "~> 8.1"
 gem "redis", "~> 6.0"
 
 gem "dotenv-rails", "~> 3.2"
+
+gem "business_time", "~> 0.13.0"

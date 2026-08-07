@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_07_135740) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_07_150428) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -33,6 +33,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_07_135740) do
     t.datetime "created_at", null: false
     t.string "nome", null: false
     t.datetime "updated_at", null: false
+  end
+
+  create_table "emprestimos", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.date "data_devolucao", null: false
+    t.date "data_emprestimo", null: false
+    t.boolean "devolvido", null: false
+    t.bigint "livro_id", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "usuario_biblioteca_id", null: false
+    t.index ["livro_id"], name: "index_emprestimos_on_livro_id"
+    t.index ["usuario_biblioteca_id"], name: "index_emprestimos_on_usuario_biblioteca_id"
   end
 
   create_table "livros", force: :cascade do |t|
@@ -62,5 +74,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_07_135740) do
     t.index ["cpf"], name: "index_usuario_bibliotecas_on_cpf", unique: true
   end
 
+  add_foreign_key "emprestimos", "livros"
+  add_foreign_key "emprestimos", "usuario_bibliotecas"
   add_foreign_key "livros", "categoria", column: "categoria_id"
 end
