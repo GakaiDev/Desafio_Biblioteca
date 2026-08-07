@@ -18,9 +18,9 @@
 - [ ] **Pendente:** Criar migração para `force_password_change` no modelo Bibliotecário e lógica para exigir troca de senha no primeiro login.
 
 ## 3. Categorias de Livros (Pendente)
-- [ ] Criar modelo e migração para `Categoria`.
-- [ ] Atributo obrigatório: Nome.
-- [ ] Desenvolver endpoints da API (CRUD).
+- [x] Criar modelo e migração para `Categoria`.
+- [x] Atributo obrigatório: Nome.
+- [x] Desenvolver endpoints da API (CRUD).
 
 ## 4. Livros (Pendente)
 - [ ] Criar modelo e migração para `Livro`.
