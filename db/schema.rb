@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_08_030019) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_08_155034) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -42,11 +42,21 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_08_030019) do
     t.date "data_devolucao", null: false
     t.date "data_emprestimo", null: false
     t.boolean "devolvido", null: false
-    t.bigint "livro_id", null: false
+    t.bigint "exemplar_id", null: false
     t.datetime "updated_at", null: false
     t.bigint "usuario_biblioteca_id", null: false
-    t.index ["livro_id"], name: "index_emprestimos_on_livro_id"
+    t.index ["exemplar_id"], name: "index_emprestimos_on_exemplar_id"
     t.index ["usuario_biblioteca_id"], name: "index_emprestimos_on_usuario_biblioteca_id"
+  end
+
+  create_table "exemplares", force: :cascade do |t|
+    t.string "codigo_barras", null: false
+    t.datetime "created_at", null: false
+    t.bigint "livro_id", null: false
+    t.string "status", default: "disponível"
+    t.datetime "updated_at", null: false
+    t.index ["codigo_barras"], name: "index_exemplares_on_codigo_barras", unique: true
+    t.index ["livro_id"], name: "index_exemplares_on_livro_id"
   end
 
   create_table "livros", force: :cascade do |t|
@@ -54,7 +64,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_08_030019) do
     t.bigint "categoria_id", null: false
     t.datetime "created_at", null: false
     t.text "observacoes"
-    t.string "status", default: "disponível", null: false
     t.string "titulo", null: false
     t.datetime "updated_at", null: false
     t.index ["categoria_id"], name: "index_livros_on_categoria_id"
@@ -76,7 +85,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_08_030019) do
     t.index ["cpf"], name: "index_usuario_bibliotecas_on_cpf", unique: true
   end
 
-  add_foreign_key "emprestimos", "livros"
+  add_foreign_key "emprestimos", "exemplares", column: "exemplar_id"
   add_foreign_key "emprestimos", "usuario_bibliotecas"
+  add_foreign_key "exemplares", "livros"
   add_foreign_key "livros", "categoria", column: "categoria_id"
 end

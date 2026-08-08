@@ -1,63 +1,73 @@
 class EmprestimosController < ApplicationController
-  before_action :set_emprestimo, only: %i[ show ]
+  before_action :authenticate_bibliotecario!
 
   def index
-    @emprestimos = Emprestimo.includes(:livro, :usuario_biblioteca).all
-    render json: @emprestimos, include: [ :livro, :usuario_biblioteca ]
-  end
+    emprestimos = Emprestimo.includes({ exemplar: :livro }, :usuario_biblioteca).order(created_at: :desc)
 
-  def show
-    render json: @emprestimo, include: [ :livro, :usuario_biblioteca ]
+    render json: emprestimos.as_json(include: {
+      exemplar: { include: :livro },
+      usuario_biblioteca: {}
+    })
   end
 
   def create
-    usuario = UsuarioBiblioteca.find_by(id: emprestimo_params[:usuario_biblioteca_id])
-    livro = Livro.find_by(id: emprestimo_params[:livro_id])
+    usuario = UsuarioBiblioteca.find(params[:usuario_biblioteca_id])
+    tem_atrasos = usuario.emprestimos.where(devolvido: false).where("data_devolucao < ?", Date.current).exists?
 
-    if usuario.nil?
-      return render json: { error: "Usuário não encontrado no sistema. Realize o cadastro antes de prosseguir." }, status: :not_found
+    if tem_atrasos
+      return render json: { error: "Empréstimo bloqueado: O leitor possui pendências em atraso." }, status: :forbidden
     end
 
-    if usuario.senha_emprestimo != params[:senha_emprestimo]
-      return render json: { error: "Senha de empréstimo incorreta." }, status: :unprocessable_entity
+    exemplar = Exemplar.find_by(codigo_barras: params[:codigo_barras])
+
+    unless exemplar
+      return render json: { error: "Código de barras não encontrado no sistema." }, status: :not_found
     end
 
-    if livro.nil? || livro.status != "disponível"
-      return render json: { error: "O livro não está com status Disponível para empréstimo." }, status: :unprocessable_entity
+    if exemplar.status != "disponível"
+      return render json: { error: "Este exemplar já está emprestado ou em manutenção." }, status: :unprocessable_entity
     end
 
-    @emprestimo = Emprestimo.new(emprestimo_params)
+    @emprestimo = Emprestimo.new(
+      exemplar: exemplar,
+      usuario_biblioteca: usuario
+    )
 
     if @emprestimo.save
       render json: @emprestimo, status: :created
     else
-      render json: @emprestimo.errors, status: :unprocessable_entity
+      render json: { error: @emprestimo.errors.full_messages.to_sentence }, status: :unprocessable_entity
     end
   end
 
   def devolver
     @emprestimo = Emprestimo.find(params[:id])
 
-    if @emprestimo.devolvido
-      return render json: { error: "Este empréstimo já foi devolvido." }, status: :unprocessable_entity
+    if @emprestimo.update(devolvido: true)
+      @emprestimo.exemplar.update!(status: "disponível")
+      render json: { message: "Devolução registrada com sucesso." }, status: :ok
+    else
+      render json: { error: "Erro ao registrar devolução." }, status: :unprocessable_entity
     end
-
-    ActiveRecord::Base.transaction do
-      @emprestimo.update!(devolvido: true)
-      @emprestimo.livro.update!(status: "disponível")
-    end
-
-    render json: @emprestimo, status: :ok
-  rescue ActiveRecord::RecordInvalid => e
-    render json: { error: e.message }, status: :unprocessable_entity
   end
 
-  private
-    def set_emprestimo
-      @emprestimo = Emprestimo.find(params[:id])
+  def renovar
+    @emprestimo = Emprestimo.find(params[:id])
+
+    if @emprestimo.devolvido
+      return render json: { error: "Este exemplar já foi devolvido." }, status: :unprocessable_entity
     end
 
-    def emprestimo_params
-      params.require(:emprestimo).permit(:livro_id, :usuario_biblioteca_id)
+    if @emprestimo.data_devolucao < Date.current
+      return render json: { error: "Não é possível renovar um empréstimo que já está em atraso." }, status: :forbidden
     end
+
+    nova_data = 15.business_days.from_now.to_date
+
+    if @emprestimo.update(data_devolucao: nova_data)
+      render json: { message: "Empréstimo renovado com sucesso.", nova_data: nova_data }, status: :ok
+    else
+      render json: { error: "Erro ao renovar empréstimo." }, status: :unprocessable_entity
+    end
+  end
 end

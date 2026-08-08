@@ -43,8 +43,8 @@
 - [x] Cálculo automático de devolução somando 15 dias úteis (utilizar gem `business_time`).
 
 ## 7. Frontend e Integração (Pendente)
-- [ ] Desenvolver telas em React (Login, Dashboard, Cadastros).
-- [ ] Implementar chamadas à API injetando o token JWT no cabeçalho `Authorization`.
+- [x] Desenvolver telas em React (Login, Dashboard, Cadastros).
+- [x] Implementar chamadas à API injetando o token JWT no cabeçalho `Authorization`.
 
 ## 8. Funcionalidades Extras e Fechamento (Pendente)
 - [ ] Integração com a API ViaCEP no cadastro de usuários (Opcional).

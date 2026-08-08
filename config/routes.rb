@@ -2,11 +2,14 @@ Rails.application.routes.draw do
   resources :categorias
   resources :funcionarios, only: [ :index, :create, :destroy ]
   post "/recuperar_senha", to: "funcionarios#recuperar_senha"
-  resources :livros
+  resources :livros do
+    resources :exemplares, only: [ :index, :create, :destroy ]
+  end
   resources :usuarios_biblioteca, path: "usuarios"
-  resources :emprestimos, only: [ :index, :show, :create ] do
+  resources :emprestimos, only: [ :index, :create ] do
     member do
       patch :devolver
+      patch :renovar
     end
   end
   get "/me", to: "perfis#me"

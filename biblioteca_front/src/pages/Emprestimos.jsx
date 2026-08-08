@@ -1,24 +1,16 @@
 import { useState, useEffect } from 'react';
-import { Plus, ArrowRightLeft, Calendar, KeyRound, Search } from 'lucide-react';
+import { ArrowRightLeft, Search, ScanBarcode, CheckCircle, RefreshCw } from 'lucide-react';
 import api from '../api/axios';
 
 export default function Emprestimos() {
   const [emprestimos, setEmprestimos] = useState([]);
-  const [livrosDisponiveis, setLivrosDisponiveis] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
   
-  const [livroId, setLivroId] = useState('');
   const [usuarioId, setUsuarioId] = useState('');
-  const [senhaEmprestimo, setSenhaEmprestimo] = useState('');
+  const [codigoBarras, setCodigoBarras] = useState('');
   
-  const [buscaLivro, setBuscaLivro] = useState('');
-  const [mostrarDropdownLivro, setMostrarDropdownLivro] = useState(false);
-  
-  const [buscaUsuario, setBuscaUsuario] = useState('');
-  const [mostrarDropdownUsuario, setMostrarDropdownUsuario] = useState(false);
-  
-  const [erro, setErro] = useState('');
   const [loading, setLoading] = useState(false);
+  const [erro, setErro] = useState('');
 
   useEffect(() => {
     carregarDados();
@@ -26,24 +18,21 @@ export default function Emprestimos() {
 
   const carregarDados = async () => {
     try {
-      const [resEmprestimos, resLivros, resUsuarios] = await Promise.all([
+      const [resEmp, resUsu] = await Promise.all([
         api.get('/emprestimos'),
-        api.get('/livros'),
         api.get('/usuarios')
       ]);
-      
-      setEmprestimos(resEmprestimos.data);
-      setLivrosDisponiveis(resLivros.data.filter(l => l.status === 'disponível'));
-      setUsuarios(resUsuarios.data);
+      setEmprestimos(resEmp.data);
+      setUsuarios(resUsu.data);
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
     }
   };
 
-  const handleSubmit = async (e) => {
+  const handleCreateEmprestimo = async (e) => {
     e.preventDefault();
-    if (!livroId || !usuarioId || !senhaEmprestimo) {
-      setErro('Selecione o livro, o leitor e informe a senha do usuário.');
+    if (!usuarioId || !codigoBarras) {
+      setErro('Selecione o leitor e faça a leitura do código de barras.');
       return;
     }
 
@@ -52,36 +41,37 @@ export default function Emprestimos() {
 
     try {
       await api.post('/emprestimos', {
-        emprestimo: {
-          livro_id: livroId,
-          usuario_biblioteca_id: usuarioId
-        },
-        senha_emprestimo: senhaEmprestimo
+        usuario_biblioteca_id: usuarioId,
+        codigo_barras: codigoBarras
       });
       
-      setLivroId(''); setUsuarioId(''); setSenhaEmprestimo('');
-      setBuscaLivro(''); setBuscaUsuario('');
-      
+      setCodigoBarras('');
       carregarDados();
-      alert('Empréstimo realizado com sucesso! A data de devolução foi calculada automaticamente.');
     } catch (error) {
-      const mensagemErro = error.response?.data?.error || 'Erro ao realizar o empréstimo.';
-      setErro(mensagemErro);
+      setErro(error.response?.data?.error || 'Erro ao registrar empréstimo.');
     } finally {
       setLoading(false);
     }
   };
 
   const handleDevolucao = async (id) => {
-    if (!window.confirm('Confirmar a devolução deste livro ao acervo?')) return;
-
+    if (!window.confirm('Confirmar a devolução deste exemplar?')) return;
     try {
       await api.patch(`/emprestimos/${id}/devolver`);
-      carregarDados(); 
-      alert('Devolução registrada com sucesso!');
+      carregarDados();
     } catch (error) {
-      alert('Erro ao registrar devolução.');
-      console.error(error);
+      alert(error.response?.data?.error || 'Erro ao registrar devolução.');
+    }
+  };
+
+  const handleRenovacao = async (id) => {
+    if (!window.confirm('Deseja renovar este empréstimo por mais 15 dias úteis?')) return;
+    try {
+      await api.patch(`/emprestimos/${id}/renovar`);
+      carregarDados();
+      alert('Prazo renovado com sucesso!');
+    } catch (error) {
+      alert(error.response?.data?.error || 'Erro ao renovar.');
     }
   };
 
@@ -91,190 +81,144 @@ export default function Emprestimos() {
     return `${dia}/${mes}/${ano}`;
   };
 
-  // Filtros dinâmicos das listas
-  const livrosFiltrados = livrosDisponiveis.filter(l => 
-    l.titulo.toLowerCase().includes(buscaLivro.toLowerCase())
-  );
-  
-  const usuariosFiltrados = usuarios.filter(u => 
-    u.nome.toLowerCase().includes(buscaUsuario.toLowerCase()) || 
-    u.cpf.includes(buscaUsuario)
-  );
-
   return (
     <div className="max-w-6xl">
       <div className="mb-6 flex items-center gap-2 text-zinc-800">
         <ArrowRightLeft size={24} className="text-blue-600" />
-        <h1 className="text-2xl font-bold">Gerenciar Empréstimos</h1>
+        <h1 className="text-2xl font-bold">Gestão de Empréstimos</h1>
       </div>
 
-      <div className="mb-8 rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-        <h2 className="mb-4 text-lg font-semibold text-zinc-800">Registrar Novo Empréstimo</h2>
+      {/* Painel do Balcão (Formulário de Saída) */}
+      <div className="mb-8 rounded-lg border border-blue-200 bg-blue-50/50 p-6 shadow-sm">
+        <div className="mb-4 flex items-center gap-2 text-blue-800">
+          <ScanBarcode size={20} />
+          <h2 className="text-lg font-semibold">Balcão de Saída (Bipe)</h2>
+        </div>
         
         {erro && (
-          <div className="mb-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-600">
+          <div className="mb-4 rounded border border-red-200 bg-white p-3 text-sm text-red-600 shadow-sm">
             {erro}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4 relative">
+        <form onSubmit={handleCreateEmprestimo} className="flex flex-col gap-4 md:flex-row md:items-end">
+          <div className="flex-1 md:max-w-sm">
+            <label className="mb-1 block text-sm font-medium text-blue-900">Leitor</label>
+            <div className="relative">
+              <Search className="absolute left-3 top-2.5 text-blue-400" size={18} />
+              <select
+                required
+                value={usuarioId}
+                onChange={(e) => setUsuarioId(e.target.value)}
+                className="w-full rounded-md border border-blue-200 bg-white py-2 pl-10 pr-3 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              >
+                <option value="">Selecione o leitor...</option>
+                {usuarios.map(u => (
+                  <option key={u.id} value={u.id}>{u.nome} ({u.cpf})</option>
+                ))}
+              </select>
+            </div>
+          </div>
           
-          {/* Autocomplete Customizado - Livro */}
-          <div className="lg:col-span-1 relative">
-            <label className="mb-1 block text-sm font-medium text-zinc-700">Livro *</label>
+          <div className="flex-1">
+            <label className="mb-1 block text-sm font-medium text-blue-900">Código de Barras do Exemplar</label>
             <div className="relative">
-              <Search className="absolute left-3 top-2.5 text-zinc-400" size={16} />
+              <ScanBarcode className="absolute left-3 top-2.5 text-blue-400" size={18} />
               <input
                 type="text"
-                value={buscaLivro}
-                placeholder="Buscar título..."
-                onChange={(e) => {
-                  setBuscaLivro(e.target.value);
-                  setLivroId(''); 
-                  setMostrarDropdownLivro(true);
-                }}
-                onFocus={() => setMostrarDropdownLivro(true)}
-                onBlur={() => setTimeout(() => setMostrarDropdownLivro(false), 200)}
-                className="w-full rounded-md border border-zinc-300 py-2 pl-9 pr-3 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white"
-              />
-            </div>
-            {/* Lista com Posicionamento Absoluto */}
-            {mostrarDropdownLivro && livrosFiltrados.length > 0 && (
-              <ul className="absolute z-10 mt-1 w-full max-h-48 overflow-y-auto rounded-md border border-zinc-200 bg-white shadow-lg">
-                {livrosFiltrados.map(l => (
-                  <li
-                    key={l.id}
-                    onClick={() => {
-                      setLivroId(l.id);
-                      setBuscaLivro(l.titulo);
-                      setMostrarDropdownLivro(false);
-                    }}
-                    className="cursor-pointer px-4 py-2 text-sm text-zinc-700 hover:bg-blue-50 hover:text-blue-700"
-                  >
-                    #{l.id} - {l.titulo}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-
-          {/* Autocomplete Customizado - Usuário */}
-          <div className="lg:col-span-1 relative">
-            <label className="mb-1 block text-sm font-medium text-zinc-700">Leitor *</label>
-            <div className="relative">
-              <Search className="absolute left-3 top-2.5 text-zinc-400" size={16} />
-              <input
-                type="text"
-                value={buscaUsuario}
-                placeholder="Buscar nome ou CPF..."
-                onChange={(e) => {
-                  setBuscaUsuario(e.target.value);
-                  setUsuarioId('');
-                  setMostrarDropdownUsuario(true);
-                }}
-                onFocus={() => setMostrarDropdownUsuario(true)}
-                onBlur={() => setTimeout(() => setMostrarDropdownUsuario(false), 200)}
-                className="w-full rounded-md border border-zinc-300 py-2 pl-9 pr-3 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white"
-              />
-            </div>
-            {/* Lista com Posicionamento Absoluto */}
-            {mostrarDropdownUsuario && usuariosFiltrados.length > 0 && (
-              <ul className="absolute z-10 mt-1 w-full max-h-48 overflow-y-auto rounded-md border border-zinc-200 bg-white shadow-lg">
-                {usuariosFiltrados.map(u => (
-                  <li
-                    key={u.id}
-                    onClick={() => {
-                      setUsuarioId(u.id);
-                      setBuscaUsuario(u.nome);
-                      setMostrarDropdownUsuario(false);
-                    }}
-                    className="cursor-pointer px-4 py-2 text-sm text-zinc-700 hover:bg-blue-50 hover:text-blue-700"
-                  >
-                    {u.nome} <span className="text-xs text-zinc-400">({u.cpf})</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-
-          {/* Senha do Leitor */}
-          <div className="lg:col-span-1">
-            <label className="mb-1 block text-sm font-medium text-zinc-700">Senha do Leitor *</label>
-            <div className="relative">
-              <KeyRound className="absolute left-3 top-2.5 text-zinc-400" size={16} />
-              <input
-                type="password"
-                value={senhaEmprestimo}
-                onChange={(e) => setSenhaEmprestimo(e.target.value)}
-                placeholder="Senha de 6 dígitos"
-                className="w-full rounded-md border border-zinc-300 py-2 pl-9 pr-3 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                required
+                value={codigoBarras}
+                onChange={(e) => setCodigoBarras(e.target.value)}
+                autoFocus 
+                placeholder="Ex: 987654321"
+                className="w-full rounded-md border border-blue-200 bg-white py-2 pl-10 pr-3 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               />
             </div>
           </div>
 
-          <div className="lg:col-span-1 flex items-end">
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex w-full items-center justify-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
-            >
-              <Plus size={16} />
-              {loading ? 'Processando...' : 'Confirmar Empréstimo'}
-            </button>
-          </div>
+          <button
+            type="submit"
+            disabled={loading}
+            className="flex h-[38px] items-center justify-center gap-2 rounded-md bg-blue-600 px-6 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
+          >
+            <CheckCircle size={16} />
+            {loading ? 'Processando...' : 'Registrar Saída'}
+          </button>
         </form>
       </div>
 
+      {/* Histórico de Movimentações */}
       <div className="overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm text-zinc-600">
             <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase text-zinc-700">
               <tr>
-                <th className="px-6 py-3 font-medium">Livro</th>
+                <th className="px-6 py-3 font-medium">Obra</th>
+                <th className="px-6 py-3 font-medium">Código Físico</th>
                 <th className="px-6 py-3 font-medium">Leitor</th>
-                <th className="px-6 py-3 font-medium">Data do Empréstimo</th>
-                <th className="px-6 py-3 font-medium">Devolução Prevista</th>
+                <th className="px-6 py-3 font-medium">Data Saída</th>
+                <th className="px-6 py-3 font-medium">Previsão</th>
                 <th className="px-6 py-3 font-medium">Status</th>
+                <th className="px-6 py-3 text-right font-medium">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-200">
               {emprestimos.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="px-6 py-8 text-center text-zinc-500">
-                    Nenhum empréstimo registrado no sistema.
+                  <td colSpan="7" className="px-6 py-8 text-center text-zinc-500">
+                    Nenhuma movimentação registrada.
                   </td>
                 </tr>
               ) : (
                 emprestimos.map((emp) => (
                   <tr key={emp.id} className="transition-colors hover:bg-zinc-50">
-                    <td className="px-6 py-4 font-medium text-zinc-900">{emp.livro?.titulo}</td>
+                    
+                    {/* 1. OBRA */}
+                    <td className="px-6 py-4 font-medium text-zinc-900">{emp.exemplar?.livro?.titulo}</td>
+                    
+                    {/* 2. CÓDIGO FÍSICO */}
+                    <td className="px-6 py-4 font-mono text-xs">{emp.exemplar?.codigo_barras}</td>
+                    
+                    {/* 3. LEITOR */}
                     <td className="px-6 py-4">{emp.usuario_biblioteca?.nome}</td>
-                    <td className="px-6 py-4 flex items-center gap-2">
-                      <Calendar size={14} className="text-zinc-400" />
-                      {formatarData(emp.data_emprestimo)}
-                    </td>
-                    <td className="px-6 py-4 font-medium text-blue-700">
-                      {formatarData(emp.data_devolucao)}
-                    </td>
+                    
+                    {/* 4. DATA SAÍDA */}
+                    <td className="px-6 py-4">{formatarData(emp.data_emprestimo)}</td>
+                    
+                    {/* 5. PREVISÃO */}
+                    <td className="px-6 py-4">{formatarData(emp.data_devolucao)}</td>
+                    
+                    {/* 6. STATUS */}
                     <td className="px-6 py-4">
-                    {emp.devolvido ? (
-                        <span className="inline-flex rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-700">
-                        Devolvido
-                        </span>
-                    ) : (
-                        <div className="flex items-center gap-2">
-                        <span className="inline-flex rounded-full bg-amber-100 px-2 py-1 text-xs font-medium text-amber-700">
-                            Em andamento
-                        </span>
-                        <button
-                            onClick={() => handleDevolucao(emp.id)}
-                            className="ml-2 rounded border border-zinc-300 bg-white px-2 py-1 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-100"
-                        >
-                            Registrar Devolução
-                        </button>
-                        </div>
-                    )}
+                      {emp.devolvido ? (
+                        <span className="inline-flex rounded-full bg-green-100 px-2 py-1 text-xs font-semibold text-green-700">Devolvido</span>
+                      ) : (
+                        <span className="inline-flex rounded-full bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-700">Em curso</span>
+                      )}
                     </td>
+                    
+                    {/* 7. AÇÕES */}
+                    <td className="px-6 py-4 text-right">
+                      {!emp.devolvido && (
+                        <div className="flex justify-end gap-3">
+                          <button
+                            onClick={() => handleRenovacao(emp.id)}
+                            className="inline-flex items-center gap-1 text-emerald-600 transition-colors hover:text-emerald-800 font-medium"
+                            title="Renovar prazo"
+                          >
+                            <RefreshCw size={16} /> Renovar
+                          </button>
+                          
+                          <button
+                            onClick={() => handleDevolucao(emp.id)}
+                            className="text-blue-600 transition-colors hover:text-blue-800 font-medium"
+                          >
+                            Devolver
+                          </button>
+                        </div>
+                      )}
+                    </td>
+                    
                   </tr>
                 ))
               )}

@@ -1,4 +1,5 @@
 class UsuarioBiblioteca < ApplicationRecord
+  has_many :emprestimos, dependent: :restrict_with_error
   validates :nome, :cpf, :telefone, :email, presence: true
   validates :cpf, uniqueness: true
 

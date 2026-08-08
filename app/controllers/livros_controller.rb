@@ -2,8 +2,8 @@ class LivrosController < ApplicationController
   before_action :set_livro, only: %i[ show update destroy ]
 
   def index
-    @livros = Livro.includes(:categoria).all
-    render json: @livros, include: :categoria
+    @livros = Livro.includes(:categoria, :exemplares).all
+    render json: @livros.as_json(include: [ :categoria, :exemplares ])
   end
 
   def show
