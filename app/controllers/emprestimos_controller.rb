@@ -2,12 +2,41 @@ class EmprestimosController < ApplicationController
   before_action :authenticate_bibliotecario!
 
   def index
+    page = (params[:page] || 1).to_i
+    per_page = (params[:per_page] || 5).to_i
+    offset = (page - 1) * per_page
+
     emprestimos = Emprestimo.includes({ exemplar: :livro }, :usuario_biblioteca).order(created_at: :desc)
 
-    render json: emprestimos.as_json(include: {
-      exemplar: { include: :livro },
-      usuario_biblioteca: {}
-    })
+    if params[:busca].present?
+      termo = "%#{params[:busca]}%"
+      emprestimos = emprestimos.joins(:usuario_biblioteca, :exemplar)
+                               .where("usuario_bibliotecas.nome ILIKE :termo OR exemplares.codigo_barras ILIKE :termo", termo: termo)
+    end
+
+    if params[:status] == "pendentes"
+      emprestimos = emprestimos.where(devolvido: false)
+    elsif params[:status] == "devolvidos"
+      emprestimos = emprestimos.where(devolvido: true)
+    elsif params[:status] == "atrasados"
+      emprestimos = emprestimos.where(devolvido: false).where("data_devolucao < ?", Date.current)
+    end
+
+    total_count = emprestimos.count
+    total_pages = (total_count.to_f / per_page).ceil
+    emprestimos = emprestimos.limit(per_page).offset(offset)
+
+    render json: {
+      emprestimos: emprestimos.as_json(include: {
+        exemplar: { include: :livro },
+        usuario_biblioteca: {}
+      }),
+      meta: {
+        current_page: page,
+        total_pages: total_pages,
+        total_count: total_count
+      }
+    }
   end
 
   def create

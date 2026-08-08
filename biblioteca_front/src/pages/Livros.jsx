@@ -8,9 +8,8 @@ export default function Livros() {
   
   const [titulo, setTitulo] = useState('');
   const [autor, setAutor] = useState('');
-  const [isbn, setIsbn] = useState('');
-  const [quantidade, setQuantidade] = useState('');
   const [categoriaId, setCategoriaId] = useState('');
+  const [observacoes, setObservacoes] = useState('');
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [livroSelecionado, setLivroSelecionado] = useState(null);
@@ -21,26 +20,38 @@ export default function Livros() {
   const [erro, setErro] = useState('');
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    carregarDados();
-  }, []);
+  const [busca, setBusca] = useState('');
+  const [paginaAtual, setPaginaAtual] = useState(1);
+  const [totalPaginas, setTotalPaginas] = useState(1);
 
-  const carregarDados = async () => {
+  useEffect(() => {
+    carregarDados(paginaAtual, busca);
+  }, [paginaAtual]);
+
+  const carregarDados = async (pagina = paginaAtual, termo = busca) => {
     try {
       const [resLivros, resCategorias] = await Promise.all([
-        api.get('/livros'),
+        api.get('/livros', { params: { page: pagina, busca: termo } }),
         api.get('/categorias')
       ]);
-      setLivros(resLivros.data);
+      
+      setLivros(resLivros.data.livros);
+      setTotalPaginas(resLivros.data.meta.total_pages);
       setCategorias(resCategorias.data);
       
       if (livroSelecionado) {
-        const livroAtualizado = resLivros.data.find(l => l.id === livroSelecionado.id);
-        setLivroSelecionado(livroAtualizado);
+        const livroAtualizado = resLivros.data.livros.find(l => l.id === livroSelecionado.id);
+        if (livroAtualizado) setLivroSelecionado(livroAtualizado);
       }
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
     }
+  };
+
+  const handleBuscar = (e) => {
+    e.preventDefault();
+    setPaginaAtual(1); 
+    carregarDados(1, busca); 
   };
 
   const handleCreateLivro = async (e) => {
@@ -50,9 +61,9 @@ export default function Livros() {
 
     try {
       await api.post('/livros', {
-        livro: { titulo, autor, isbn, quantidade, categoria_id: categoriaId }
+        livro: { titulo, autor, categoria_id: categoriaId, observacoes }
       });
-      setTitulo(''); setAutor(''); setIsbn(''); setQuantidade(''); setCategoriaId('');
+      setTitulo(''); setAutor(''); setCategoriaId(''); setObservacoes('');
       carregarDados();
     } catch (error) {
       setErro(error.response?.data?.error || 'Erro ao cadastrar livro.');
@@ -144,41 +155,53 @@ export default function Livros() {
           <div className="lg:col-span-1">
             <label className="mb-1 block text-sm font-medium text-zinc-700">Categoria</label>
             <select
-              required 
-              value={categoriaId} 
-              onChange={(e) => setCategoriaId(e.target.value ? Number(e.target.value) : '')}
+              required value={categoriaId} onChange={(e) => setCategoriaId(e.target.value ? Number(e.target.value) : '')}
               className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white"
             >
               <option value="">Selecione...</option>
               {categorias.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
             </select>
           </div>
-          <div className="lg:col-span-2">
-            <label className="mb-1 block text-sm font-medium text-zinc-700">ISBN</label>
+          
+          {/* Nova linha com Observações e Botão */}
+          <div className="lg:col-span-4">
+            <label className="mb-1 block text-sm font-medium text-zinc-700">Observações (Opcional)</label>
             <input
-              type="text" required value={isbn} onChange={(e) => setIsbn(e.target.value)}
-              className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-            />
-          </div>
-          <div className="lg:col-span-2">
-            <label className="mb-1 block text-sm font-medium text-zinc-700">Volume/Edição</label>
-            <input
-              type="number" required value={quantidade} onChange={(e) => setQuantidade(e.target.value)}
+              type="text" value={observacoes} onChange={(e) => setObservacoes(e.target.value)}
+              placeholder="Ex: Edição especial, livro doado, capa danificada..."
               className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
             />
           </div>
           <div className="lg:col-span-1 flex items-end">
             <button
               type="submit" disabled={loading}
-              className="flex w-full items-center justify-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
+              className="flex w-full h-[38px] items-center justify-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
             >
-              <Plus size={16} /> Salvar Obra
+              Salvar Obra
             </button>
           </div>
         </form>
       </div>
 
       {/* Listagem do Catálogo */}
+
+      {/* Barra de Busca */}
+      <form onSubmit={handleBuscar} className="mb-4 flex gap-2">
+        <input
+          type="text"
+          placeholder="Buscar livro por título ou autor..."
+          value={busca}
+          onChange={(e) => setBusca(e.target.value)}
+          className="flex-1 rounded-md border border-zinc-300 px-4 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+        />
+        <button
+          type="submit"
+          className="rounded-md bg-zinc-800 px-6 py-2 text-sm font-semibold text-white transition-colors hover:bg-zinc-700"
+        >
+          Buscar
+        </button>
+      </form>
+
       <div className="overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm text-zinc-600">
@@ -229,7 +252,32 @@ export default function Livros() {
             </tbody>
           </table>
         </div>
+
+        {/* Rodapé de Paginação */}
+        <div className="flex items-center justify-between border-t border-zinc-200 bg-zinc-50 px-6 py-3">
+          <span className="text-sm text-zinc-500">
+            Página <span className="font-semibold text-zinc-800">{paginaAtual}</span> de <span className="font-semibold text-zinc-800">{totalPaginas || 1}</span>
+          </span>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setPaginaAtual(prev => Math.max(prev - 1, 1))}
+              disabled={paginaAtual === 1}
+              className="rounded-md border border-zinc-300 bg-white px-3 py-1 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:opacity-50 disabled:hover:bg-white"
+            >
+              Anterior
+            </button>
+            <button
+              onClick={() => setPaginaAtual(prev => Math.min(prev + 1, totalPaginas))}
+              disabled={paginaAtual === totalPaginas || totalPaginas === 0}
+              className="rounded-md border border-zinc-300 bg-white px-3 py-1 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:opacity-50 disabled:hover:bg-white"
+            >
+              Próxima
+            </button>
+          </div>
+        </div>
       </div>
+
+      
 
       {/* Modal de Exemplares */}
       {isModalOpen && livroSelecionado && (
@@ -244,8 +292,16 @@ export default function Livros() {
                   Exemplares: {livroSelecionado.titulo}
                 </h2>
                 <p className="text-sm text-zinc-500">Cadastre o código de barras de cada cópia física.</p>
+                
+                {/* Exibe as observações do catálogo, se existirem */}
+                {livroSelecionado.observacoes && (
+                  <div className="mt-2 text-sm text-amber-700 bg-amber-50 px-3 py-1.5 rounded border border-amber-200">
+                    <span className="font-semibold">Observações:</span> {livroSelecionado.observacoes}
+                  </div>
+                )}
               </div>
-              <button onClick={() => setIsModalOpen(false)} className="text-zinc-400 hover:text-zinc-700">
+              
+              <button onClick={() => setIsModalOpen(false)} className="text-zinc-400 hover:text-zinc-700 self-start">
                 <X size={24} />
               </button>
             </div>
