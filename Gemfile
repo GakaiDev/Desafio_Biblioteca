@@ -58,3 +58,5 @@ gem "redis", "~> 6.0"
 gem "dotenv-rails", "~> 3.2"
 
 gem "business_time", "~> 0.13.0"
+
+gem "rack-cors", "~> 3.0"

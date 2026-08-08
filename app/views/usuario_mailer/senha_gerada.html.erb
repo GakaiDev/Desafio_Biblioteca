@@ -1,5 +1,15 @@
-<h1>Usuario#senha_gerada</h1>
-
-<p>
-  <%= @greeting %>, find me in app/views/usuario_mailer/senha_gerada.html.erb
-</p>
+<div style="font-family: sans-serif; color: #333; max-width: 600px; margin: 0 auto;">
+  <h2 style="color: #2563eb;">Olá, <%= @usuario.nome %>.</h2>
+  
+  <p>Seu cadastro na <strong>Biblioteca Municipal Ney Pontes</strong> foi realizado com sucesso.</p>
+  
+  <p>Para realizar o empréstimo de livros no balcão de atendimento, você precisará da sua senha de acesso gerada automaticamente. Segue abaixo:</p>
+  
+  <div style="background-color: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 6px; padding: 16px; margin: 24px 0; text-align: center;">
+    <span style="font-size: 24px; font-weight: bold; letter-spacing: 4px; color: #1f2937;">
+      <%= @usuario.senha_emprestimo %>
+    </span>
+  </div>
+  
+  <p style="font-size: 14px; color: #6b7280;">Guarde esta senha em segurança. Ela é de uso pessoal e intransferível.</p>
+</div>

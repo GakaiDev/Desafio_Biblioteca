@@ -12,6 +12,8 @@ class Emprestimo < ApplicationRecord
   def definir_datas
     self.data_emprestimo ||= Date.current
     self.data_devolucao ||= 15.business_days.from_now.to_date
+
+    self.devolvido = false if self.devolvido.nil?
   end
 
   def atualizar_status_livro

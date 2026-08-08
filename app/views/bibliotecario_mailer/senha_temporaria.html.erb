@@ -1,0 +1,9 @@
+<div style="font-family: sans-serif; color: #333;">
+  <h2>Olá, <%= @bibliotecario.nome || 'Bibliotecário' %>.</h2>
+  <p>Uma recuperação de senha foi solicitada para a sua conta.</p>
+  <p>Sua nova senha de acesso temporária é:</p>
+  <h3 style="background: #f3f4f6; padding: 10px; display: inline-block; letter-spacing: 2px;">
+    <%= @senha_temp %>
+  </h3>
+  <p>Ao fazer o login com esta senha, o sistema exigirá a criação de uma nova senha definitiva.</p>
+</div>

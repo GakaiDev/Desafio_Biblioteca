@@ -1,3 +1,3 @@
-class Categorium < ApplicationRecord
+class Categoria < ApplicationRecord
   validates :nome, presence: true
 end

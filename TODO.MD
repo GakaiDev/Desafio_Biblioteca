@@ -15,7 +15,7 @@
 - [x] Configuração de filas em background (Sidekiq) para não travar a API.
 - [x] Configuração de envio de e-mails (ActionMailer + Mailtrap) para recuperação de senha.
 - [x] Isolamento de credenciais usando variáveis de ambiente (`dotenv-rails`).
-- [ ] **Pendente:** Criar migração para `force_password_change` no modelo Bibliotecário e lógica para exigir troca de senha no primeiro login.
+- [x] **Pendente:** Criar migração para `force_password_change` no modelo Bibliotecário e lógica para exigir troca de senha no primeiro login.
 
 ## 3. Categorias de Livros (Pendente)
 - [x] Criar modelo e migração para `Categoria`.
@@ -37,10 +37,10 @@
 - [x] Desenvolver endpoints da API (CRUD).
 
 ## 6. Empréstimos (Pendente)
-- [ ] Criar modelo e migração para `Emprestimo` relacionando Livro e Usuário.
-- [ ] Lógica para verificar se o status do livro é "Disponível" antes de prosseguir.
-- [ ] Endpoint de validação de empréstimo exigindo a "senha de empréstimo" do usuário.
-- [ ] Cálculo automático de devolução somando 15 dias úteis (utilizar gem `business_time`).
+- [x] Criar modelo e migração para `Emprestimo` relacionando Livro e Usuário.
+- [x] Lógica para verificar se o status do livro é "Disponível" antes de prosseguir.
+- [x] Endpoint de validação de empréstimo exigindo a "senha de empréstimo" do usuário.
+- [x] Cálculo automático de devolução somando 15 dias úteis (utilizar gem `business_time`).
 
 ## 7. Frontend e Integração (Pendente)
 - [ ] Desenvolver telas em React (Login, Dashboard, Cadastros).

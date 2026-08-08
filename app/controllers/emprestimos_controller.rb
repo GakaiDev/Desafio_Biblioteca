@@ -19,7 +19,7 @@ class EmprestimosController < ApplicationController
     end
 
     if usuario.senha_emprestimo != params[:senha_emprestimo]
-      return render json: { error: "Senha de empréstimo incorreta." }, status: :unauthorized
+      return render json: { error: "Senha de empréstimo incorreta." }, status: :unprocessable_entity
     end
 
     if livro.nil? || livro.status != "disponível"
@@ -33,6 +33,23 @@ class EmprestimosController < ApplicationController
     else
       render json: @emprestimo.errors, status: :unprocessable_entity
     end
+  end
+
+  def devolver
+    @emprestimo = Emprestimo.find(params[:id])
+
+    if @emprestimo.devolvido
+      return render json: { error: "Este empréstimo já foi devolvido." }, status: :unprocessable_entity
+    end
+
+    ActiveRecord::Base.transaction do
+      @emprestimo.update!(devolvido: true)
+      @emprestimo.livro.update!(status: "disponível")
+    end
+
+    render json: @emprestimo, status: :ok
+  rescue ActiveRecord::RecordInvalid => e
+    render json: { error: e.message }, status: :unprocessable_entity
   end
 
   private

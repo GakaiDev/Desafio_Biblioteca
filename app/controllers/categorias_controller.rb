@@ -1,5 +1,4 @@
 class CategoriasController < ApplicationController
-  # before_action :authenticate_bibliotecario!
   before_action :set_categoria, only: %i[ show update destroy ]
 
   def index
