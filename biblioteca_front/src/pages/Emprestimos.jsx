@@ -26,8 +26,9 @@ export default function Emprestimos() {
 
   const carregarUsuarios = async () => {
     try {
-      const res = await api.get('/usuarios');
-      setUsuarios(res.data);
+      const res = await api.get('/usuarios', { params: { per_page: 1000 } });
+      
+      setUsuarios(res.data.usuarios || res.data);
     } catch (error) {
       console.error('Erro ao carregar usuários:', error);
     }

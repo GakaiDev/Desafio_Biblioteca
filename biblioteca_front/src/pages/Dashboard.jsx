@@ -1,28 +1,43 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Book, Users, ArrowRightLeft, AlertTriangle, Clock, CalendarDays, UserPlus } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Book, Users, RefreshCw, AlertTriangle, PlusCircle, ScanBarcode } from 'lucide-react';
 import api from '../api/axios';
 
 export default function Dashboard() {
-  const [dados, setDados] = useState({
-    metricas: { total_livros: 0, livros_emprestados: 0, total_usuarios: 0, emprestimos_ativos: 0 },
-    atrasados: [],
-    emprestimos_hoje: []
+  const navigate = useNavigate();
+  
+  const [metricas, setMetricas] = useState({
+    total_acervo: 0,
+    leitores_ativos: 0,
+    emprestimos_ativos: 0,
+    emprestimos_atrasados: 0
   });
-  const [loading, setLoading] = useState(true);
+  
+  const [movimentacoesHoje, setMovimentacoesHoje] = useState([]);
+  
+  const [paginaAtual, setPaginaAtual] = useState(1);
+  const [totalPaginas, setTotalPaginas] = useState(1);
+  const [totalMovimentacoes, setTotalMovimentacoes] = useState(0);
 
   useEffect(() => {
-    carregarResumo();
-  }, []);
+    carregarDashboard(paginaAtual);
+  }, [paginaAtual]);
 
-  const carregarResumo = async () => {
+  const carregarDashboard = async (pagina = 1) => {
     try {
-      const response = await api.get('/dashboard/resumo');
-      setDados(response.data);
+      const response = await api.get('/dashboard', {
+        params: { page: pagina }
+      });
+      
+      setMetricas(response.data.metricas);
+      setMovimentacoesHoje(response.data.movimentacoes_hoje);
+      
+      if (response.data.meta) {
+        setTotalPaginas(response.data.meta.total_pages);
+        setTotalMovimentacoes(response.data.meta.total_count);
+      }
     } catch (error) {
-      console.error('Erro ao carregar os dados do dashboard:', error);
-    } finally {
-      setLoading(false);
+      console.error("Erro ao carregar dados do dashboard:", error);
     }
   };
 
@@ -32,156 +47,146 @@ export default function Dashboard() {
     return `${dia}/${mes}/${ano}`;
   };
 
-  if (loading) {
-    return <div className="p-8 text-zinc-500">Carregando métricas...</div>;
-  }
-
   return (
     <div className="max-w-6xl">
-      {/* Cabeçalho com Botões de Ação Rápida */}
-      <div className="mb-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+      {/* Cabeçalho com Ações Rápidas */}
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold text-zinc-800">Visão Geral</h1>
         
-        <div className="flex gap-3">
-          <Link
-            to="/dashboard/usuarios"
-            className="flex items-center gap-2 rounded-md bg-white border border-zinc-300 px-4 py-2 text-sm font-semibold text-zinc-700 transition-colors hover:bg-zinc-50"
+        <div className="flex flex-wrap items-center gap-3">
+          <button 
+            onClick={() => navigate('/dashboard/usuarios')}
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-white px-4 py-2 text-sm font-semibold text-zinc-700 border border-zinc-300 transition-colors hover:bg-zinc-50"
           >
-            <UserPlus size={16} className="text-emerald-600" />
-            Novo Leitor
-          </Link>
-          <Link
-            to="/dashboard/emprestimos"
-            className="flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
+            <PlusCircle size={18} className="text-emerald-600" />
+            Cadastrar Leitor
+          </button>
+          
+          <button 
+            onClick={() => navigate('/dashboard/Emprestimos')}
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700"
           >
-            <ArrowRightLeft size={16} />
-            Realizar Empréstimo
-          </Link>
+            <ScanBarcode size={18} />
+            Novo Empréstimo
+          </button>
         </div>
       </div>
-
-      {/* Cartões de Métricas (KPIs) */}
+      
+      {/* Cards de Métricas */}
       <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-medium text-zinc-500">Total do Acervo</h3>
-            <Book size={20} className="text-blue-500" />
+          <div className="flex items-center gap-4">
+            <div className="rounded-full bg-blue-100 p-3 text-blue-600">
+              <Book size={24} />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-zinc-500">Volume do Acervo</p>
+              <h3 className="text-2xl font-bold text-zinc-800">{metricas.total_acervo}</h3>
+            </div>
           </div>
-          <p className="mt-2 text-3xl font-bold text-zinc-800">{dados.metricas.total_livros}</p>
         </div>
 
         <div className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-medium text-zinc-500">Livros Emprestados</h3>
-            <ArrowRightLeft size={20} className="text-amber-500" />
+          <div className="flex items-center gap-4">
+            <div className="rounded-full bg-emerald-100 p-3 text-emerald-600">
+              <Users size={24} />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-zinc-500">Leitores Cadastrados</p>
+              <h3 className="text-2xl font-bold text-zinc-800">{metricas.leitores_ativos}</h3>
+            </div>
           </div>
-          <p className="mt-2 text-3xl font-bold text-zinc-800">{dados.metricas.livros_emprestados}</p>
         </div>
 
         <div className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-medium text-zinc-500">Leitores Cadastrados</h3>
-            <Users size={20} className="text-emerald-500" />
+          <div className="flex items-center gap-4">
+            <div className="rounded-full bg-amber-100 p-3 text-amber-600">
+              <RefreshCw size={24} />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-zinc-500">Empréstimos Ativos</p>
+              <h3 className="text-2xl font-bold text-zinc-800">{metricas.emprestimos_ativos}</h3>
+            </div>
           </div>
-          <p className="mt-2 text-3xl font-bold text-zinc-800">{dados.metricas.total_usuarios}</p>
         </div>
 
         <div className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-medium text-zinc-500">Empréstimos Ativos</h3>
-            <Clock size={20} className="text-indigo-500" />
+          <div className="flex items-center gap-4">
+            <div className="rounded-full bg-red-100 p-3 text-red-600">
+              <AlertTriangle size={24} />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-zinc-500">Atrasos Pendentes</p>
+              <h3 className="text-2xl font-bold text-red-600">{metricas.emprestimos_atrasados}</h3>
+            </div>
           </div>
-          <p className="mt-2 text-3xl font-bold text-zinc-800">{dados.metricas.emprestimos_ativos}</p>
         </div>
       </div>
 
-      {/* Tabelas Inferiores divididas em duas colunas no Desktop */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      {/* Tabela de Movimentações Recentes */}
+      <div className="overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm">
+        <div className="border-b border-zinc-200 px-6 py-4 flex justify-between items-center bg-zinc-50">
+          <h2 className="text-lg font-semibold text-zinc-800">Saídas de Hoje</h2>
+          <span className="text-sm font-medium text-zinc-500 bg-white px-3 py-1 rounded-full border border-zinc-200 shadow-sm">
+            Total: {totalMovimentacoes}
+          </span>
+        </div>
         
-        {/* Tabela de Alertas (Esquerda) */}
-        <div className="rounded-lg border border-red-200 bg-white shadow-sm flex flex-col">
-          <div className="flex items-center gap-2 border-b border-red-200 bg-red-50 p-4 rounded-t-lg">
-            <AlertTriangle size={20} className="text-red-600" />
-            <h2 className="font-semibold text-red-800">Alertas de Atraso</h2>
-          </div>
-          
-          <div className="overflow-x-auto flex-1">
-            <table className="w-full text-left text-sm text-zinc-600">
-              <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase text-zinc-700">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm text-zinc-600">
+            <thead className="border-b border-zinc-200 text-xs uppercase text-zinc-500 bg-white">
+              <tr>
+                <th className="px-6 py-3 font-medium">Obra</th>
+                <th className="px-6 py-3 font-medium">Código Físico</th>
+                <th className="px-6 py-3 font-medium">Leitor</th>
+                <th className="px-6 py-3 font-medium">Devolução Prevista</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-200">
+              {movimentacoesHoje.length === 0 ? (
                 <tr>
-                  <th className="px-4 py-3 font-medium">Livro</th>
-                  <th className="px-4 py-3 font-medium">Leitor</th>
-                  <th className="px-4 py-3 font-medium text-right">Atraso</th>
+                  <td colSpan="4" className="px-6 py-8 text-center text-zinc-500">
+                    Nenhuma saída registrada hoje.
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-200">
-                {dados.atrasados.length === 0 ? (
-                  <tr>
-                    <td colSpan="3" className="px-4 py-8 text-center text-zinc-500">
-                      Nenhuma devolução pendente em atraso.
-                    </td>
+              ) : (
+                movimentacoesHoje.map((mov) => (
+                  <tr key={mov.id} className="transition-colors hover:bg-zinc-50">
+                    <td className="px-6 py-4 font-medium text-zinc-900">{mov.exemplar?.livro?.titulo}</td>
+                    <td className="px-6 py-4 font-mono text-xs">{mov.exemplar?.codigo_barras}</td>
+                    <td className="px-6 py-4">{mov.usuario_biblioteca?.nome}</td>
+                    <td className="px-6 py-4">{formatarData(mov.data_devolucao)}</td>
                   </tr>
-                ) : (
-                  dados.atrasados.map((item) => (
-                    <tr key={item.id} className="transition-colors hover:bg-zinc-50">
-                      <td className="px-4 py-3 font-medium text-zinc-900">{item.livro}</td>
-                      <td className="px-4 py-3">{item.leitor}</td>
-                      <td className="px-4 py-3 text-right">
-                        <span className="inline-flex rounded-full bg-red-100 px-2 py-1 text-xs font-semibold text-red-700">
-                          {item.dias_atraso} {item.dias_atraso === 1 ? 'dia' : 'dias'}
-                        </span>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
 
-        {/* Tabela Movimentação do Dia (Direita) */}
-        <div className="rounded-lg border border-zinc-200 bg-white shadow-sm flex flex-col">
-          <div className="flex items-center gap-2 border-b border-zinc-200 bg-zinc-50 p-4 rounded-t-lg">
-            <CalendarDays size={20} className="text-blue-600" />
-            <h2 className="font-semibold text-zinc-800">Movimentação de Hoje</h2>
+        {/* Rodapé de Paginação */}
+        {totalMovimentacoes > 0 && (
+          <div className="flex items-center justify-between border-t border-zinc-200 bg-zinc-50 px-6 py-3">
+            <span className="text-sm text-zinc-500">
+              Página <span className="font-semibold text-zinc-800">{paginaAtual}</span> de <span className="font-semibold text-zinc-800">{totalPaginas || 1}</span>
+            </span>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setPaginaAtual(prev => Math.max(prev - 1, 1))}
+                disabled={paginaAtual === 1}
+                className="rounded-md border border-zinc-300 bg-white px-3 py-1 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:opacity-50 disabled:hover:bg-white"
+              >
+                Anterior
+              </button>
+              <button
+                onClick={() => setPaginaAtual(prev => Math.min(prev + 1, totalPaginas))}
+                disabled={paginaAtual === totalPaginas || totalPaginas === 0}
+                className="rounded-md border border-zinc-300 bg-white px-3 py-1 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:opacity-50 disabled:hover:bg-white"
+              >
+                Próxima
+              </button>
+            </div>
           </div>
-          
-          <div className="overflow-x-auto flex-1">
-            <table className="w-full text-left text-sm text-zinc-600">
-              <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase text-zinc-700">
-                <tr>
-                  <th className="px-4 py-3 font-medium">Livro</th>
-                  <th className="px-4 py-3 font-medium">Leitor</th>
-                  <th className="px-4 py-3 font-medium text-right">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-200">
-                {dados.emprestimos_hoje.length === 0 ? (
-                  <tr>
-                    <td colSpan="3" className="px-4 py-8 text-center text-zinc-500">
-                      Nenhum empréstimo registrado hoje.
-                    </td>
-                  </tr>
-                ) : (
-                  dados.emprestimos_hoje.map((item) => (
-                    <tr key={item.id} className="transition-colors hover:bg-zinc-50">
-                      <td className="px-4 py-3 font-medium text-zinc-900">{item.livro}</td>
-                      <td className="px-4 py-3">{item.leitor}</td>
-                      <td className="px-4 py-3 text-right">
-                        {item.devolvido ? (
-                           <span className="text-xs font-medium text-green-600">Devolvido hoje</span>
-                        ) : (
-                           <span className="text-xs font-medium text-amber-600">Saiu hoje</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
+        )}
       </div>
     </div>
   );

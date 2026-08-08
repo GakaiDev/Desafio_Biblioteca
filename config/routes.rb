@@ -16,6 +16,7 @@ Rails.application.routes.draw do
   patch "/atualizar_senha", to: "perfis#atualizar_senha"
 
   get "/dashboard/resumo", to: "dashboard#resumo"
+  get "dashboard", to: "dashboard#index"
 
   devise_for :bibliotecarios, path: "", path_names: {
     sign_in: "login",
