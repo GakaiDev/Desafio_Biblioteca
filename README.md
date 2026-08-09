@@ -29,7 +29,7 @@ O sistema controla o acervo de livros, gestão de exemplares físicos, níveis d
 ### 1. Clonar o repositório
 ```bash
 git clone git@github.com:GakaiDev/Desafio_Biblioteca.git
-cd biblioteca-ney-pontes
+cd Desafio_Biblioteca
 
 ```
 
@@ -85,5 +85,3 @@ O banco de dados já vem populado com:
 
 * 10 Livros e 20 Exemplares disponíveis.
 * 3 Leitores fictícios (Ada Lovelace, Alan Turing, Grace Hopper) com diferentes cenários (regular, com multas, com atrasos) para testes de validação no balcão de empréstimos.
-
-```
