@@ -28,7 +28,7 @@ O sistema controla o acervo de livros, gestão de exemplares físicos, níveis d
 
 ### 1. Clonar o repositório
 ```bash
-git clone git@github.com:GakaiDev/Desafio_Biblioteca.git
+git clone https://github.com/GakaiDev/Desafio_Biblioteca.git
 cd Desafio_Biblioteca
 
 ```
