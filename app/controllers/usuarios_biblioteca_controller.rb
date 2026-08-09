@@ -58,6 +58,15 @@ class UsuariosBibliotecaController < ApplicationController
     end
   end
 
+  def pagar_multa
+    @usuario = UsuarioBiblioteca.find(params[:id])
+    if @usuario.update(multa_total: 0.0)
+      render json: { message: "Multa zerada com sucesso!" }, status: :ok
+    else
+      render json: { error: "Erro ao processar pagamento." }, status: :unprocessable_entity
+    end
+  end
+
   private
 
   def set_usuario

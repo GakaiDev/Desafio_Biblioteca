@@ -25,6 +25,7 @@ export default function Login() {
         
         const meResponse = await api.get('/me');
 
+        const adminStatus = meResponse.data.admin ? 'true' : 'false';
         localStorage.setItem('isAdmin', meResponse.data.admin);
         localStorage.setItem('userName', meResponse.data.nome || meResponse.data.email);
         

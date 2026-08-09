@@ -19,7 +19,7 @@ class FuncionariosController < ApplicationController
     )
 
     if @funcionario.save
-      BibliotecarioMailer.senha_temporaria(@funcionario, senha_inicial).deliver_later
+      BibliotecarioMailer.senha_temporaria(@funcionario, senha_inicial).deliver_now
       render json: @funcionario, status: :created
     else
       render json: { error: @funcionario.errors.full_messages.to_sentence }, status: :unprocessable_entity
@@ -42,7 +42,7 @@ class FuncionariosController < ApplicationController
     if bibliotecario
       senha_temp = SecureRandom.hex(4)
       bibliotecario.update!(password: senha_temp, senha_provisoria: true)
-      BibliotecarioMailer.senha_temporaria(bibliotecario, senha_temp).deliver_later
+      BibliotecarioMailer.senha_temporaria(bibliotecario, senha_temp).deliver_now
     end
 
     render json: { message: "Se o e-mail constar em nossa base, uma senha temporária será enviada." }, status: :ok

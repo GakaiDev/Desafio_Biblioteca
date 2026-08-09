@@ -47,8 +47,8 @@
 - [x] Implementar chamadas à API injetando o token JWT no cabeçalho `Authorization`.
 
 ## 8. Funcionalidades Extras e Fechamento (Pendente)
-- [ ] Integração com a API ViaCEP no cadastro de usuários (Opcional).
-- [ ] Funcionalidade extra: Relatório de livros em atraso.
+- [x] Integração com a API ViaCEP no cadastro de usuários (Opcional).
+- [x] Funcionalidade extra: Relatório de livros em atraso.
 - [ ] Funcionalidade extra: Cálculo de multas / Renovação online.
 - [ ] Gravação do vídeo de até 8 minutos apresentando o sistema em funcionamento.
 - [ ] Envio do formulário e do link final do GitHub.

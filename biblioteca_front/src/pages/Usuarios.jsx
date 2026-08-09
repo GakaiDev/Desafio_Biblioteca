@@ -1,27 +1,24 @@
 import { useState, useEffect } from 'react';
 import { Users, Search, Edit, Trash2, X } from 'lucide-react';
 import api from '../api/axios';
+import toast from 'react-hot-toast';
 
 export default function Usuarios() {
   const [usuarios, setUsuarios] = useState([]);
   
-  // Estados do Formulário
   const [nome, setNome] = useState('');
   const [cpf, setCpf] = useState('');
   const [email, setEmail] = useState('');
   const [telefone, setTelefone] = useState('');
   
-  // Controle de Edição e Feedback
   const [usuarioEditando, setUsuarioEditando] = useState(null);
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState('');
 
-  // Estados de Paginação e Filtro
   const [busca, setBusca] = useState('');
   const [paginaAtual, setPaginaAtual] = useState(1);
   const [totalPaginas, setTotalPaginas] = useState(1);
 
-  // Efeito para recarregar quando a página mudar
   useEffect(() => {
     carregarUsuarios(paginaAtual, busca);
   }, [paginaAtual]);
@@ -31,13 +28,13 @@ export default function Usuarios() {
       const res = await api.get('/usuarios', {
         params: { page: pagina, busca: termo }
       });
-      // Acessa o envelope novo do JSON
       setUsuarios(res.data.usuarios || res.data); 
       if (res.data.meta) {
         setTotalPaginas(res.data.meta.total_pages);
       }
     } catch (error) {
       console.error('Erro ao carregar usuários:', error);
+      toast.error('Erro ao carregar a lista de leitores.');
     }
   };
 
@@ -59,7 +56,7 @@ export default function Usuarios() {
     setCpf(usuario.cpf);
     setEmail(usuario.email);
     setTelefone(usuario.telefone || '');
-    window.scrollTo({ top: 0, behavior: 'smooth' }); // Sobe a tela para o formulário
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleSalvar = async (e) => {
@@ -73,17 +70,19 @@ export default function Usuarios() {
 
     try {
       if (usuarioEditando) {
-        // Rotina de Atualização (PUT/PATCH)
         await api.put(`/usuarios/${usuarioEditando.id}`, payload);
+        toast.success('Leitor atualizado com sucesso!');
       } else {
-        // Rotina de Criação (POST)
         await api.post('/usuarios', payload);
+        toast.success('Leitor cadastrado com sucesso!');
       }
       
       limparFormulario();
-      carregarUsuarios(); // Recarrega a tabela na página atual
+      carregarUsuarios();
     } catch (error) {
-      setErro(error.response?.data?.error || 'Erro ao salvar o leitor.');
+      const msgErro = error.response?.data?.error || 'Erro ao salvar o leitor.';
+      setErro(msgErro);
+      toast.error(msgErro);
     } finally {
       setLoading(false);
     }
@@ -93,9 +92,21 @@ export default function Usuarios() {
     if (!window.confirm('Tem certeza que deseja excluir este leitor?')) return;
     try {
       await api.delete(`/usuarios/${id}`);
+      toast.success('Leitor excluído com sucesso!');
       carregarUsuarios();
     } catch (error) {
-      alert(error.response?.data?.error || 'Erro ao excluir o leitor.');
+      toast.error(error.response?.data?.error || 'Erro ao excluir o leitor.');
+    }
+  };
+
+  const handlePagarMulta = async (id, valor) => {
+    if (!window.confirm(`Confirmar o recebimento de R$ ${valor}? O leitor será desbloqueado.`)) return;
+    try {
+      await api.patch(`/usuarios/${id}/pagar_multa`);
+      carregarUsuarios();
+      toast.success('Pagamento recebido! Leitor desbloqueado.');
+    } catch (error) {
+      toast.error('Erro ao registrar o pagamento.');
     }
   };
 
@@ -196,8 +207,8 @@ export default function Usuarios() {
               <tr>
                 <th className="px-6 py-3 font-medium">Nome</th>
                 <th className="px-6 py-3 font-medium">CPF</th>
-                <th className="px-6 py-3 font-medium">E-mail</th>
-                <th className="px-6 py-3 font-medium">Telefone</th>
+                <th className="px-6 py-3 font-medium">Contato</th>
+                <th className="px-6 py-3 font-medium">Status Financeiro</th>
                 <th className="px-6 py-3 font-medium text-right">Ações</th>
               </tr>
             </thead>
@@ -213,8 +224,29 @@ export default function Usuarios() {
                   <tr key={user.id} className="transition-colors hover:bg-zinc-50">
                     <td className="px-6 py-4 font-medium text-zinc-900">{user.nome}</td>
                     <td className="px-6 py-4">{user.cpf}</td>
-                    <td className="px-6 py-4">{user.email}</td>
-                    <td className="px-6 py-4">{user.telefone || '-'}</td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm font-medium text-zinc-800">{user.email}</div>
+                      <div className="text-xs text-zinc-500">{user.telefone || '-'}</div>
+                    </td>
+                    <td className="px-6 py-4">
+                      {parseFloat(user.multa_total) > 0 ? (
+                        <div className="flex items-center gap-2">
+                          <span className="inline-flex rounded-full bg-red-100 px-2 py-1 text-xs font-semibold text-red-700 border border-red-200">
+                            Bloqueado: R$ {parseFloat(user.multa_total).toFixed(2).replace('.', ',')}
+                          </span>
+                          <button
+                            onClick={() => handlePagarMulta(user.id, parseFloat(user.multa_total).toFixed(2))}
+                            className="text-xs font-medium text-blue-600 hover:text-blue-800 underline"
+                          >
+                            Receber
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="inline-flex rounded-full bg-green-100 px-2 py-1 text-xs font-semibold text-green-700 border border-green-200">
+                          Regular
+                        </span>
+                      )}
+                    </td>
                     <td className="px-6 py-4 text-right">
                       <button
                         onClick={() => handleEditarClick(user)}

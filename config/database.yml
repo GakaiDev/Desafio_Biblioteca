@@ -88,8 +88,9 @@ production:
   primary: &primary_production
     <<: *default
     database: biblioteca_api_production
-    username: biblioteca_api
-    password: <%= ENV["BIBLIOTECA_API_DATABASE_PASSWORD"] %>
+    username: postgres
+    password: password
+    host: biblioteca_db
   cache:
     <<: *primary_production
     database: biblioteca_api_production_cache
@@ -101,4 +102,4 @@ production:
   cable:
     <<: *primary_production
     database: biblioteca_api_production_cable
-    migrations_paths: db/cable_migrate
+    migrations_paths: db/cable_migrates

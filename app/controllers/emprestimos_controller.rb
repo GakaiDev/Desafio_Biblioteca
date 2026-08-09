@@ -41,8 +41,12 @@ class EmprestimosController < ApplicationController
 
   def create
     usuario = UsuarioBiblioteca.find(params[:usuario_biblioteca_id])
-    tem_atrasos = usuario.emprestimos.where(devolvido: false).where("data_devolucao < ?", Date.current).exists?
 
+    if usuario.multa_total.to_f > 0
+      return render json: { error: "Empréstimo bloqueado: O leitor possui multa pendente (R$ #{'%.2f' % usuario.multa_total}). Receba o valor antes de liberar." }, status: :forbidden
+    end
+
+    tem_atrasos = usuario.emprestimos.where(devolvido: false).where("data_devolucao < ?", Date.current).exists?
     if tem_atrasos
       return render json: { error: "Empréstimo bloqueado: O leitor possui pendências em atraso." }, status: :forbidden
     end
@@ -55,6 +59,10 @@ class EmprestimosController < ApplicationController
 
     if exemplar.status != "disponível"
       return render json: { error: "Este exemplar já está emprestado ou em manutenção." }, status: :unprocessable_entity
+    end
+
+    if usuario.senha_emprestimo != params[:senha_emprestimo]
+      return render json: { error: "Senha do leitor inválida. Empréstimo não autorizado." }, status: :unprocessable_entity
     end
 
     @emprestimo = Emprestimo.new(
@@ -70,11 +78,33 @@ class EmprestimosController < ApplicationController
   end
 
   def devolver
-    @emprestimo = Emprestimo.find(params[:id])
+    @emprestimo = Emprestimo.find(params[:id]) || Emprestimo.find(params[:emprestimo_id])
+
+    if @emprestimo.devolvido
+      render json: { error: "Este exemplar já foi devolvido." }, status: :unprocessable_entity
+      return
+    end
+
+    dias_atraso = 0
+    valor_multa = 0.0
+
+    if Date.current > @emprestimo.data_devolucao
+      dias_atraso = (Date.current - @emprestimo.data_devolucao).to_i
+      valor_multa = dias_atraso * 2.0
+    end
 
     if @emprestimo.update(devolvido: true)
-      @emprestimo.exemplar.update!(status: "disponível")
-      render json: { message: "Devolução registrada com sucesso." }, status: :ok
+
+      if valor_multa > 0
+        usuario = @emprestimo.usuario_biblioteca
+        usuario.update(multa_total: usuario.multa_total.to_f + valor_multa)
+      end
+
+      render json: {
+        message: "Devolução registrada com sucesso.",
+        dias_atraso: dias_atraso,
+        valor_multa: valor_multa
+      }, status: :ok
     else
       render json: { error: "Erro ao registrar devolução." }, status: :unprocessable_entity
     end

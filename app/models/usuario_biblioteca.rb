@@ -13,6 +13,6 @@ class UsuarioBiblioteca < ApplicationRecord
   end
 
   def enviar_senha_por_email
-    UsuarioMailer.senha_gerada(self).deliver_later
+    UsuarioMailer.senha_gerada(self).deliver_now
   end
 end

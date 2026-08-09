@@ -1,13 +1,18 @@
-import { useState, useEffect } from 'react';
-import { ArrowRightLeft, Search, ScanBarcode, CheckCircle, RefreshCw, Filter } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { ArrowRightLeft, Search, ScanBarcode, CheckCircle, RefreshCw, Filter, KeyRound } from 'lucide-react';
 import api from '../api/axios';
+import toast from 'react-hot-toast';
 
 export default function Emprestimos() {
   const [emprestimos, setEmprestimos] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
   
   const [usuarioId, setUsuarioId] = useState('');
+  const [buscaUsuarioTermo, setBuscaUsuarioTermo] = useState('');
+  const [dropdownAberto, setDropdownAberto] = useState(false);
+  const [senhaEmprestimo, setSenhaEmprestimo] = useState('');
   const [codigoBarras, setCodigoBarras] = useState('');
+  
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState('');
 
@@ -16,8 +21,18 @@ export default function Emprestimos() {
   const [paginaAtual, setPaginaAtual] = useState(1);
   const [totalPaginas, setTotalPaginas] = useState(1);
 
+  const dropdownRef = useRef(null);
+
   useEffect(() => {
     carregarUsuarios();
+    
+    const handleClickFora = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setDropdownAberto(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickFora);
+    return () => document.removeEventListener("mousedown", handleClickFora);
   }, []);
 
   useEffect(() => {
@@ -27,7 +42,6 @@ export default function Emprestimos() {
   const carregarUsuarios = async () => {
     try {
       const res = await api.get('/usuarios', { params: { per_page: 1000 } });
-      
       setUsuarios(res.data.usuarios || res.data);
     } catch (error) {
       console.error('Erro ao carregar usuários:', error);
@@ -60,8 +74,8 @@ export default function Emprestimos() {
 
   const handleCreateEmprestimo = async (e) => {
     e.preventDefault();
-    if (!usuarioId || !codigoBarras) {
-      setErro('Selecione o leitor e faça a leitura do código de barras.');
+    if (!usuarioId || !codigoBarras || !senhaEmprestimo) {
+      setErro('Preencha todos os campos: leitor, senha e código de barras.');
       return;
     }
 
@@ -71,13 +85,20 @@ export default function Emprestimos() {
     try {
       await api.post('/emprestimos', {
         usuario_biblioteca_id: usuarioId,
-        codigo_barras: codigoBarras
+        codigo_barras: codigoBarras,
+        senha_emprestimo: senhaEmprestimo
       });
       
       setCodigoBarras('');
+      setSenhaEmprestimo('');
+      setUsuarioId('');
+      setBuscaUsuarioTermo('');
+      
+      toast.success('Empréstimo registrado com sucesso!');
       carregarEmprestimos(); 
     } catch (error) {
       setErro(error.response?.data?.error || 'Erro ao registrar empréstimo.');
+      toast.error('Falha ao registrar empréstimo.');
     } finally {
       setLoading(false);
     }
@@ -86,10 +107,22 @@ export default function Emprestimos() {
   const handleDevolucao = async (id) => {
     if (!window.confirm('Confirmar a devolução deste exemplar?')) return;
     try {
-      await api.patch(`/emprestimos/${id}/devolver`);
+      const res = await api.patch(`/emprestimos/${id}/devolver`);
       carregarEmprestimos();
+      
+      const { dias_atraso, valor_multa } = res.data;
+
+      if (dias_atraso > 0) {
+        toast.error(
+          `Devolvido com ${dias_atraso} dias de atraso!\nMulta gerada: R$ ${valor_multa.toFixed(2).replace('.', ',')}`,
+          { duration: 6000, icon: '⚠️' }
+        );
+      } else {
+        toast.success('Exemplar devolvido no prazo correto!');
+      }
+
     } catch (error) {
-      alert(error.response?.data?.error || 'Erro ao registrar devolução.');
+      toast.error(error.response?.data?.error || 'Erro ao registrar devolução.');
     }
   };
 
@@ -98,9 +131,9 @@ export default function Emprestimos() {
     try {
       await api.patch(`/emprestimos/${id}/renovar`);
       carregarEmprestimos();
-      alert('Prazo renovado com sucesso!');
+      toast.success('Prazo renovado com sucesso!');
     } catch (error) {
-      alert(error.response?.data?.error || 'Erro ao renovar.');
+      toast.error(error.response?.data?.error || 'Erro ao renovar.');
     }
   };
 
@@ -109,6 +142,23 @@ export default function Emprestimos() {
     const [ano, mes, dia] = dataString.split('-');
     return `${dia}/${mes}/${ano}`;
   };
+
+  const renderStatus = (emp) => {
+    if (emp.devolvido) return <span className="inline-flex rounded-full bg-green-100 px-2 py-1 text-xs font-semibold text-green-700">Devolvido</span>;
+    
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    const previsao = new Date(emp.data_devolucao + 'T00:00:00');
+    
+    if (previsao < hoje) return <span className="inline-flex rounded-full bg-red-100 px-2 py-1 text-xs font-semibold text-red-700">Atrasado</span>;
+    
+    return <span className="inline-flex rounded-full bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-700">Em curso</span>;
+  };
+
+  const usuariosFiltrados = usuarios.filter(u => 
+    u.nome.toLowerCase().includes(buscaUsuarioTermo.toLowerCase()) || 
+    u.cpf.includes(buscaUsuarioTermo)
+  );
 
   return (
     <div className="max-w-6xl">
@@ -121,7 +171,7 @@ export default function Emprestimos() {
       <div className="mb-8 rounded-lg border border-blue-200 bg-blue-50/50 p-6 shadow-sm">
         <div className="mb-4 flex items-center gap-2 text-blue-800">
           <ScanBarcode size={20} />
-          <h2 className="text-lg font-semibold">Balcão de Saída (Bipe)</h2>
+          <h2 className="text-lg font-semibold">Balcão de Saída</h2>
         </div>
         
         {erro && (
@@ -131,26 +181,69 @@ export default function Emprestimos() {
         )}
 
         <form onSubmit={handleCreateEmprestimo} className="flex flex-col gap-4 md:flex-row md:items-end">
-          <div className="flex-1 md:max-w-sm">
-            <label className="mb-1 block text-sm font-medium text-blue-900">Leitor</label>
+          
+          {/* Autocomplete de Usuários */}
+          <div className="flex-1 md:max-w-xs relative" ref={dropdownRef}>
+            <label className="mb-1 block text-sm font-medium text-blue-900">Leitor (Nome ou CPF)</label>
             <div className="relative">
               <Search className="absolute left-3 top-2.5 text-blue-400" size={18} />
-              <select
-                required
-                value={usuarioId}
-                onChange={(e) => setUsuarioId(e.target.value)}
+              <input
+                type="text"
+                placeholder="Buscar leitor..."
+                value={buscaUsuarioTermo}
+                onChange={(e) => {
+                  setBuscaUsuarioTermo(e.target.value);
+                  setUsuarioId(''); 
+                  setDropdownAberto(true);
+                }}
+                onFocus={() => setDropdownAberto(true)}
                 className="w-full rounded-md border border-blue-200 bg-white py-2 pl-10 pr-3 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              >
-                <option value="">Selecione o leitor...</option>
-                {usuarios.map(u => (
-                  <option key={u.id} value={u.id}>{u.nome} ({u.cpf})</option>
+              />
+            </div>
+            
+            {/* Lista Suspensa do Autocomplete */}
+            {dropdownAberto && usuariosFiltrados.length > 0 && (
+              <ul className="absolute z-10 mt-1 max-h-48 w-full overflow-y-auto rounded-md border border-zinc-200 bg-white py-1 shadow-lg">
+                {usuariosFiltrados.map(u => (
+                  <li
+                    key={u.id}
+                    className="cursor-pointer px-4 py-2 text-sm text-zinc-700 hover:bg-blue-50"
+                    onClick={() => {
+                      setUsuarioId(u.id);
+                      setBuscaUsuarioTermo(`${u.nome} (${u.cpf})`);
+                      setDropdownAberto(false);
+                    }}
+                  >
+                    <div className="font-medium">{u.nome}</div>
+                    <div className="text-xs text-zinc-500">{u.cpf}</div>
+                  </li>
                 ))}
-              </select>
+              </ul>
+            )}
+            {dropdownAberto && buscaUsuarioTermo && usuariosFiltrados.length === 0 && (
+              <div className="absolute z-10 mt-1 w-full rounded-md border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-500 shadow-lg">
+                Nenhum leitor encontrado.
+              </div>
+            )}
+          </div>
+
+          <div className="w-32">
+            <label className="mb-1 block text-sm font-medium text-blue-900">Senha</label>
+            <div className="relative">
+              <KeyRound className="absolute left-3 top-2.5 text-blue-400" size={18} />
+              <input
+                type="password"
+                required
+                value={senhaEmprestimo}
+                onChange={(e) => setSenhaEmprestimo(e.target.value)}
+                placeholder="******"
+                className="w-full rounded-md border border-blue-200 bg-white py-2 pl-10 pr-3 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              />
             </div>
           </div>
           
-          <div className="flex-1">
-            <label className="mb-1 block text-sm font-medium text-blue-900">Código de Barras do Exemplar</label>
+          <div className="flex-1 md:max-w-xs">
+            <label className="mb-1 block text-sm font-medium text-blue-900">Exemplar</label>
             <div className="relative">
               <ScanBarcode className="absolute left-3 top-2.5 text-blue-400" size={18} />
               <input
@@ -158,7 +251,7 @@ export default function Emprestimos() {
                 required
                 value={codigoBarras}
                 onChange={(e) => setCodigoBarras(e.target.value)}
-                placeholder="Ex: 987654321"
+                placeholder="Código de Barras"
                 className="w-full rounded-md border border-blue-200 bg-white py-2 pl-10 pr-3 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               />
             </div>
@@ -166,16 +259,16 @@ export default function Emprestimos() {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !usuarioId}
             className="flex h-[38px] items-center justify-center gap-2 rounded-md bg-blue-600 px-6 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
           >
             <CheckCircle size={16} />
-            {loading ? 'Processando...' : 'Registrar Saída'}
+            {loading ? 'Processando...' : 'Registrar'}
           </button>
         </form>
       </div>
 
-      {/* Controles de Busca e Filtro (Novo) */}
+      {/* Controles de Busca e Filtro */}
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
         <form onSubmit={handleBuscar} className="flex flex-1 gap-2">
           <input
@@ -239,11 +332,7 @@ export default function Emprestimos() {
                     <td className="px-6 py-4">{formatarData(emp.data_emprestimo)}</td>
                     <td className="px-6 py-4">{formatarData(emp.data_devolucao)}</td>
                     <td className="px-6 py-4">
-                      {emp.devolvido ? (
-                        <span className="inline-flex rounded-full bg-green-100 px-2 py-1 text-xs font-semibold text-green-700">Devolvido</span>
-                      ) : (
-                        <span className="inline-flex rounded-full bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-700">Em curso</span>
-                      )}
+                      {renderStatus(emp)}
                     </td>
                     <td className="px-6 py-4 text-right">
                       {!emp.devolvido && (

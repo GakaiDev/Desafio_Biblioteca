@@ -15,6 +15,8 @@ Rails.application.routes.draw do
   get "/me", to: "perfis#me"
   patch "/atualizar_senha", to: "perfis#atualizar_senha"
 
+  patch "usuarios/:id/pagar_multa", to: "usuarios_biblioteca#pagar_multa"
+
   get "/dashboard/resumo", to: "dashboard#resumo"
   get "dashboard", to: "dashboard#index"
 
@@ -23,6 +25,7 @@ Rails.application.routes.draw do
     sign_out: "logout",
     registration: "signup"
   },
+  defaults: { format: :json },
   controllers: {
     sessions: "bibliotecarios/sessions",
     registrations: "bibliotecarios/registrations"
