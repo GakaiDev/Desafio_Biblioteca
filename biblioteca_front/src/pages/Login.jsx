@@ -23,6 +23,8 @@ export default function Login() {
         const token = authHeader.split(' ')[1];
         localStorage.setItem('token', token);
         
+        api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        
         const meResponse = await api.get('/me');
 
         const adminStatus = meResponse.data.admin ? 'true' : 'false';
