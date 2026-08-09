@@ -19,27 +19,35 @@ export default function Login() {
       });
 
       const authHeader = response.headers.authorization;
-      if (authHeader) {
-        const token = authHeader.split(' ')[1];
-        localStorage.setItem('token', token);
-        
-        api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-        
-        const meResponse = await api.get('/me');
-
-        const adminStatus = meResponse.data.admin ? 'true' : 'false';
-        localStorage.setItem('isAdmin', meResponse.data.admin);
-        localStorage.setItem('userName', meResponse.data.nome || meResponse.data.email);
-        
-        if (meResponse.data.senha_provisoria) {
-          localStorage.setItem('senha_provisoria', 'true');
-          navigate('/primeiro-acesso');
-        } else {
-          localStorage.removeItem('senha_provisoria');
-          navigate('/dashboard');
-        }
+      
+      if (!authHeader) {
+        setError('Erro de conexão: Token não recebido do servidor.');
+        console.error('O cabeçalho Authorization não foi retornado. Verifique o CORS do Rails.');
+        return; 
       }
+
+      const token = authHeader.split(' ')[1];
+      localStorage.setItem('token', token);
+      
+      const meResponse = await api.get('/me', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      localStorage.setItem('isAdmin', meResponse.data.admin);
+      localStorage.setItem('userName', meResponse.data.nome || meResponse.data.email);
+      
+      if (meResponse.data.senha_provisoria) {
+        localStorage.setItem('senha_provisoria', 'true');
+        navigate('/primeiro-acesso');
+      } else {
+        localStorage.removeItem('senha_provisoria');
+        navigate('/dashboard');
+      }
+      
     } catch (err) {
+      console.error("Erro no login:", err);
       setError('E-mail ou senha inválidos.');
     }
   };
