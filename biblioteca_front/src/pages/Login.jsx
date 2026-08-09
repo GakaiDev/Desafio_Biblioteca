@@ -22,16 +22,16 @@ export default function Login() {
       
       if (!authHeader) {
         setError('Erro de conexão: Token não recebido do servidor.');
-        console.error('O cabeçalho Authorization não foi retornado. Verifique o CORS do Rails.');
         return; 
       }
 
-      const token = authHeader.split(' ')[1];
+      const token = authHeader.split(' ')[1].trim();
       localStorage.setItem('token', token);
       
       const meResponse = await api.get('/me', {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Cache-Control': 'no-cache'
         }
       });
 
@@ -40,15 +40,20 @@ export default function Login() {
       
       if (meResponse.data.senha_provisoria) {
         localStorage.setItem('senha_provisoria', 'true');
-        navigate('/primeiro-acesso');
+        window.location.href = '/primeiro-acesso';
       } else {
         localStorage.removeItem('senha_provisoria');
-        navigate('/dashboard');
+        window.location.href = '/dashboard';
       }
       
     } catch (err) {
       console.error("Erro no login:", err);
-      setError('E-mail ou senha inválidos.');
+      
+      if (err.config && err.config.url.endsWith('/me')) {
+        setError('Erro ao carregar seu perfil. Tente novamente.');
+      } else {
+        setError('E-mail ou senha inválidos.');
+      }
     }
   };
 
