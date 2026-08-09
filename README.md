@@ -68,7 +68,7 @@ Com a infraestrutura no ar, você terá acesso a duas interfaces no seu navegado
 
 ### 1. Sistema da Biblioteca (Frontend)
 
-Acesse **[http://localhost:5173]**.
+Acesse **[http://localhost:5173](http://localhost:5173)**.
 O script de seeds gerou o seguinte acesso administrador para testes:
 
 * **E-mail:** `admin@biblioteca.com`
@@ -76,7 +76,7 @@ O script de seeds gerou o seguinte acesso administrador para testes:
 
 ### 2. Caixa de E-mails Virtual (Mailpit)
 
-Acesse **[http://localhost:8025]**.
+Acesse **[http://localhost:8025](http://localhost:8025)**.
 O sistema possui envio real de e-mails para envio de senhas provisórias e senhas de empréstimo. O Mailpit intercepta todos os e-mails enviados pela API localmente para que você possa visualizá-los sem precisar de um provedor externo.
 
 ## 🧪 Cenários de Teste (Seeds)
