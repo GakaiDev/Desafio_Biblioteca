@@ -72,14 +72,8 @@ Rails.application.configure do
   # config.generators.apply_rubocop_autocorrect_after_generate!
 
   config.action_mailer.delivery_method = :smtp
-  config.action_mailer.perform_deliveries = true
-  config.action_mailer.default_url_options = { host: "localhost", port: 3000 }
   config.action_mailer.smtp_settings = {
-    user_name: ENV["MAILTRAP_USER"],
-    password: ENV["MAILTRAP_PASSWORD"],
-    address: "sandbox.smtp.mailtrap.io",
-    domain: "sandbox.smtp.mailtrap.io",
-    port: "2525",
-    authentication: :cram_md5
+    address: "mailpit",
+    port: 1025
   }
 end

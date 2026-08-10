@@ -42,8 +42,6 @@ services:
       - SECRET_KEY_BASE=${SECRET_KEY_BASE}
       - RAILS_SERVE_STATIC_FILES=true
       - DEVISE_JWT_SECRET_KEY=${DEVISE_JWT_SECRET_KEY}
-      - SMTP_USERNAME=${MAILTRAP_USER}
-      - SMTP_PASSWORD=${MAILTRAP_PASSWORD}
     ports:
       - "3000:80" 
     depends_on:
