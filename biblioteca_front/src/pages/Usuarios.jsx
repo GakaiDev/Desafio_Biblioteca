@@ -50,6 +50,20 @@ export default function Usuarios() {
     setErro('');
   };
 
+  const handleCpfChange = (e) => {
+    const apenasNumeros = e.target.value.replace(/\D/g, '');
+    if (apenasNumeros.length <= 11) {
+      setCpf(apenasNumeros);
+    }
+  };
+
+  const handleTelefoneChange = (e) => {
+    const apenasNumeros = e.target.value.replace(/\D/g, '');
+    if (apenasNumeros.length <= 11) {
+      setTelefone(apenasNumeros);
+    }
+  };
+
   const handleEditarClick = (usuario) => {
     setUsuarioEditando(usuario);
     setNome(usuario.nome);
@@ -61,6 +75,19 @@ export default function Usuarios() {
 
   const handleSalvar = async (e) => {
     e.preventDefault();
+    
+    if (cpf.length !== 11) {
+      setErro('O CPF deve conter exatamente 11 dígitos.');
+      toast.error('O CPF deve conter exatamente 11 dígitos.');
+      return;
+    }
+
+    if (telefone.length < 10 || telefone.length > 11) {
+      setErro('O telefone deve conter 10 (fixo) ou 11 (celular) dígitos numéricos.');
+      toast.error('O telefone deve ter 10 ou 11 dígitos.');
+      return;
+    }
+
     setLoading(true);
     setErro('');
 
@@ -148,9 +175,14 @@ export default function Usuarios() {
             />
           </div>
           <div className="lg:col-span-1">
-            <label className="mb-1 block text-sm font-medium text-zinc-700">CPF</label>
+            <label className="mb-1 block text-sm font-medium text-zinc-700">CPF (Apenas números)</label>
             <input
-              type="text" required value={cpf} onChange={(e) => setCpf(e.target.value)}
+              type="text" 
+              required 
+              value={cpf} 
+              onChange={handleCpfChange}
+              maxLength="11"
+              placeholder="00000000000"
               className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
             />
           </div>
@@ -162,9 +194,14 @@ export default function Usuarios() {
             />
           </div>
           <div className="lg:col-span-1">
-            <label className="mb-1 block text-sm font-medium text-zinc-700">Telefone</label>
+            <label className="mb-1 block text-sm font-medium text-zinc-700">Telefone (Apenas números)</label>
             <input
-              type="text" value={telefone} onChange={(e) => setTelefone(e.target.value)}
+              type="text" 
+              required
+              value={telefone} 
+              onChange={handleTelefoneChange}
+              maxLength="11"
+              placeholder="84999999999"
               className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
             />
           </div>

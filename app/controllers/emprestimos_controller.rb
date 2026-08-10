@@ -65,12 +65,15 @@ class EmprestimosController < ApplicationController
       return render json: { error: "Senha do leitor inválida. Empréstimo não autorizado." }, status: :unprocessable_entity
     end
 
+
     @emprestimo = Emprestimo.new(
       exemplar: exemplar,
       usuario_biblioteca: usuario
     )
 
     if @emprestimo.save
+      exemplar.update!(status: "emprestado")
+
       render json: @emprestimo, status: :created
     else
       render json: { error: @emprestimo.errors.full_messages.to_sentence }, status: :unprocessable_entity
@@ -78,11 +81,14 @@ class EmprestimosController < ApplicationController
   end
 
   def devolver
-    @emprestimo = Emprestimo.find(params[:id]) || Emprestimo.find(params[:emprestimo_id])
+    @emprestimo = Emprestimo.find_by(id: params[:id]) || Emprestimo.find_by(id: params[:emprestimo_id])
+
+    unless @emprestimo
+      return render json: { error: "Empréstimo não encontrado." }, status: :not_found
+    end
 
     if @emprestimo.devolvido
-      render json: { error: "Este exemplar já foi devolvido." }, status: :unprocessable_entity
-      return
+      return render json: { error: "Este exemplar já foi devolvido." }, status: :unprocessable_entity
     end
 
     dias_atraso = 0
@@ -94,6 +100,7 @@ class EmprestimosController < ApplicationController
     end
 
     if @emprestimo.update(devolvido: true)
+      @emprestimo.exemplar.update!(status: "disponível")
 
       if valor_multa > 0
         usuario = @emprestimo.usuario_biblioteca
